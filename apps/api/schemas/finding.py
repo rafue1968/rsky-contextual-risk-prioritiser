@@ -37,7 +37,7 @@ class Finding(BaseModel):
     # Scanner-specific data
     evidence: dict = Field(default_factory=dict)
     remediation: dict = Field(default_factory=dict)
-    metadat: dict = Field(default_factory=dict)
+    metadata: dict = Field(default_factory=dict)
     raw_payload: dict = Field(default_factory=dict)
 
     created_at: Optional[datetime] = None
