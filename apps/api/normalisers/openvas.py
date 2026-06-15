@@ -27,7 +27,17 @@ class UnifiedFindingNormalizer:
         """
 
         return {
-            "id": self._build_finding_id(openvas_finding),
+            "id": openvas_finding.get("raw_id"), #self._build_finding_id(openvas_finding),
             "title": openvas_finding.get("title"),
             "description": openvas_finding.get("description"),
+            "service": openvas_finding.get("service"),
+            "severity": self._build_severity(
+                openvas_finding.get("severity")
+            ),
+            "cwe": openvas_finding.get("cwe"),
+            "url": openvas_finding.get("url"),
+            "source": openvas_finding.get("source"),
+            "raw": openvas_finding.get("raw"),
+            "nvt": openvas_finding.get("nvt"),
+            "remediation": openvas_finding.get("remediation"),
         }
