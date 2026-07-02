@@ -35,27 +35,81 @@ def parse_openvas_file(file_path: str) -> list[dict]:
     for idx, result in enumerate(results):
         try:
             # 3. Extract fields (still raw, not normalized)
+            refs = result.findall(".//ref")
+
+            cves = [
+                r.attrib.get("id")
+                for r in refs
+                if r.attrib.get("type") == "cve"
+            ]
+
+            urls = [
+                r.attrib.get("id")
+                for r in refs
+                if r.attrib.get("type") == "url"
+            ]
+
+            port = text_or_none(result, "port")
+
+            port_number = None
+            protocol = None
+
+            if port and "/" in port:
+                port_number, protocol = port.split("/")
+
             finding = {
                 "source": "openvas",
+
                 "raw_id": text_or_none(result, "id"),
+
                 "host": text_or_none(result, "host"),
+
                 "ip": text_or_none(result, "host"),
-                "port": text_or_none(result, "port"),
-                "service": text_or_none(result, "service"),
+
+                "port": int(port_number) if port_number else None,
+
+                "protocol": protocol,
+
                 "title": text_or_none(result, "name"),
+
                 "description": text_or_none(result, "description"),
+
                 "severity": text_or_none(result, "severity"),
 
-                # CVEs are multiple values
-                "cve": [c.text for c in result.findall(".//cve") if c.text],
+                "threat": text_or_none(result, "threat"),
 
-                "nvt": text_or_none(result, "nvt"),
-                "remediation": text_or_none(result, "solution"),
+                "cvss_score": text_or_none(result, "severity"),
+
+                "cvss_vector": text_or_none(
+                    result,
+                    ".//cvss_base_vector",
+                ),
+
+                # CVEs are multiple values
+                "cve": cves,
+
+                "references": urls,
+
+                "nvt": text_or_none(result, "//oid"),
+
+                "solution": text_or_none(result, "//solution"),
+
+
+
+                "solution_type": text_or_none(
+                    result,
+                    ".//solution/type",
+                ),
+
+                "qod": text_or_none(result, ".//qod/value"),
 
                 "tags": None,
 
                 # Keep full XML string for debugging + traceability
-                "raw": ET.tostring(result, encoding="unicode"),
+                "raw": ET.tostring(
+                    result, 
+                    encoding="unicode",
+                ),
             }
 
             findings.append(finding)

@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 
-class UnifiedFindingNormalizer:
+class OpenVASNormalizer:
     """
     Normalizes OpenVAS intermediate findings into the Unified Finding Model.
     """

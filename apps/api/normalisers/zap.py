@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 
 
 
-class UnifiedFindingNormalizer:
+class ZapNormalizer:
     """
     Normalizes OWASP ZAP intermediate findings into the Unified Finding Model.
     """
@@ -53,3 +53,7 @@ class UnifiedFindingNormalizer:
             # "scanner_risk_code": 
         
         }
+    
+
+    def _build_source():
+        print("Hello")

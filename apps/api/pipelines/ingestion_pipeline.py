@@ -2,13 +2,13 @@ from connectors.zap import parse_zap_file
 from connectors.openvas import parse_openvas_file
 from normalisers.core import normalise_finding
 import logging
-from normalisers.zap import UnifiedFindingNormalizer as ZapNormalizer
-from normalisers.openvas import UnifiedFindingNormalizer as OpenVASNormalizer
-
+from normalisers.zap import ZapNormalizer
+from normalisers.openvas import OpenVASNormalizer
+from db.findings_repo import upsert_findings_bulk
 
 logger = logging.getLogger(__name__)
 
-def run_ingestion_pipeline(scanner: str, file_path: str):
+def run_ingestion_pipeline(scanner: str, file_path: str, supabase):
 
     """
     End-to-end ingestion pipeline:
@@ -34,16 +34,11 @@ def run_ingestion_pipeline(scanner: str, file_path: str):
 
     logger.info(f"Found {len(raw_findings)} findings")
 
-    # final_findings = [
-    #     normalise_finding(f)
-    #     for f in raw_findings
-    # ]
-
-    # logger.info(f"Found {len(final_findings)} normalised findings")
-
-    # return final_findings
-
-    return [
+    findings = [
         normalizer.normalize(f)
         for f in raw_findings
     ]
+
+    upsert_findings_bulk(supabase, findings)
+
+    return findings
