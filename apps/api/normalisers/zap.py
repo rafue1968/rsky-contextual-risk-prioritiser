@@ -1,4 +1,5 @@
 from typing import Dict, Any, Optional
+from uuid import uuid4
 
 
 
@@ -8,7 +9,7 @@ class ZapNormalizer:
     Normalizes OWASP ZAP intermediate findings into the Unified Finding Model.
     """
 
-    SEVERITY_MAPPING = {
+    RISK_MAP = {
         0: "info",
         1: "low",
         2: "medium",
@@ -16,44 +17,98 @@ class ZapNormalizer:
         4: "critical",
     }
 
-    # CONFIDENCE_MAP = {
-    #     "False Positive": "false_positive",
-    #     "Low": "low",
-    #     "Medium": "medium",
-    #     "High": "high",
-    #     "Confirmed": "confirmed",
-    # }
 
-
-    def _build_severity(self, risk_code: Optional[str]) -> str:
-        if risk_code is None:
-            return "unkown"
-        
-        return self.SEVERITY_MAPPING.get(str(risk_code), "unknown")
-
-
-    def normalize(self, zap_finding: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize(self, finding: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert a single OWASP ZAP intermediate finding into the Unified Finding Model.
         """
 
         return {
-            "id": self._build_finding_id(zap_finding),
-            "title": zap_finding.get("title"),
-            "description": self._build_description(zap_finding),
-            "risk": self._build_risk(zap_finding),
-            "severity": self._build_severity(
-                zap_finding.get("risk")
-            ),
-            "cwe": zap_finding.get("cwe"),
-            "url": zap_finding.get("endpoint"),
-            "source": zap_finding.get("source"),
-            "raw": zap_finding.get("raw"),
-            # "tags": zap_finding.get("tags"),
-            # "scanner_risk_code": 
-        
+            "finding_id": str(uuid4()),
+            "source": self._build_source(finding),
+            "vulnerability": self._build_vulnerability(finding),
+            "severity": self._build_severity(finding),
+            "target": self._build_target(finding),
+            "evidence": self._build_evidence(finding),
+            "remediation": self._build_remediation(finding),
+            "metadata": self._build_metadata(finding),
         }
     
 
-    def _build_source():
-        print("Hello")
+    def _build_source(self, finding):
+        return {
+            "scanner": finding.get("source"),
+            "scanner_version": finding.get("scanner_version"),
+            "scan_id": finding.get("scan_id"),
+            "scan_timestamp": finding.get("scan_timestamp"),
+        }
+    
+
+    def _build_vulnerability(self, finding):
+        
+        references = []
+
+        if finding.get("reference"):
+            references.append(finding["reference"])
+
+        return {
+            "title": finding.get("title"),
+            "description": finding.get("description"),
+            "category": "web",
+            "cwe_ids": finding.get("cwe") or [],
+            "cve_ids": finding.get("cve") or [],
+            "references": references,
+        }
+    
+    
+    def _build_severity(self, finding):
+        return {
+            "level": self.RISK_MAP.get(
+                str(finding.get("risk")), "unknown"
+            ),
+            "cvss_score": None,
+            "cvss_vector": None,        
+        }
+    
+
+    def _build_target(self, finding):
+
+        protocol = "https" if finding.get("ssl") == "true" else "http"
+
+        return {
+            "host": finding.get("host"),
+            "port": finding.get("port"),
+            "protocol": protocol,
+            "url": finding.get("url"),
+            "asset_type": "web_app"
+        }
+    
+
+    def _build_evidence(self, finding):
+        return {
+            "request": finding.get("request"),
+            "response": finding.get("response"),
+            "matched_content": finding.get("matched_content"),
+            "parameter": finding.get("parameter"),
+            "attack_vector": finding.get("attack"),
+        }
+    
+
+    def _build_remediation(self, finding):
+        return {
+            "solution": finding.get("solution"),
+            "solution_type": "mitigation",
+        }
+    
+    def _build_metadata(self, finding):
+        tags = finding.get("tags")
+
+        if tags is None:
+            tags = []
+
+        return {
+            "raw_plugin_id": finding.get("raw_id"),
+            "tags": tags,
+            "first_seen": finding.get("scan_timestamp"),
+            "raw_source_data": finding.get("raw"),
+        }
