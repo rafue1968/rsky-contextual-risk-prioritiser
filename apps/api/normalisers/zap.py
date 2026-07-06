@@ -10,11 +10,11 @@ class ZapNormalizer:
     """
 
     RISK_MAP = {
-        0: "info",
-        1: "low",
-        2: "medium",
-        3: "high",
-        4: "critical",
+        "0": "informational",
+        "1": "low",
+        "2": "medium",
+        "3": "high",
+        "4": "critical",
     }
 
 
@@ -57,29 +57,39 @@ class ZapNormalizer:
             "category": "web",
             "cwe_ids": finding.get("cwe") or [],
             "cve_ids": finding.get("cve") or [],
-            "references": references,
+            "references": [] #references,
         }
     
     
     def _build_severity(self, finding):
         return {
             "level": self.RISK_MAP.get(
-                str(finding.get("risk")), "unknown"
+                str(finding.get("risk")), 
+                "unknown"
             ),
             "cvss_score": None,
-            "cvss_vector": None,        
+            "cvss_vector": None,
+            "confidence": None,
         }
     
 
     def _build_target(self, finding):
 
-        protocol = "https" if finding.get("ssl") == "true" else "http"
+        url = finding.get("url")
+
+        protocol = None 
+        
+        if url:
+            if url.startswith("https://"):
+                protocol = "https"               
+            elif url.startswith("http://"):
+                protocol = "http"
 
         return {
-            "host": finding.get("host"),
-            "port": finding.get("port"),
+            "host": None, #finding.get("host"),
+            "port": None, #finding.get("port"),
             "protocol": protocol,
-            "url": finding.get("url"),
+            "url": url,
             "asset_type": "web_app"
         }
     

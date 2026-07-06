@@ -39,6 +39,7 @@ def run_ingestion_pipeline(scanner: str, file_path: str, supabase):
         for f in raw_findings
     ]
 
-    upsert_findings_bulk(supabase, findings)
+    result = upsert_findings_bulk(supabase, findings)
+    logger.info(f"Upserted {len(result)} findings")
 
     return findings

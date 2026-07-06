@@ -1,4 +1,5 @@
 from typing import Dict, Any, Optional
+from uuid import uuid4
 
 class OpenVASNormalizer:
     """
@@ -6,38 +7,93 @@ class OpenVASNormalizer:
     """
 
 
-    SEVERITY_MAPPING = {
-        "1": "low",
-        "2": "medium",
-        "3": "high",
-        "4": "critical",
+    SEVERITY_MAP = {
+        "Log": "informational",
+        "Low": "low",
+        "Medium": "medium",
+        "High": "high",
+        "Critical": "critical",
     }
-
-
-    def _build_severity(self, risk_code: Optional[str]) -> str:
-        if risk_code is None:
-            return "unknown"
-        
-        return self.SEVERITY_MAPPING.get(str(risk_code), "unknown")
     
 
-    def normalize(self, openvas_finding: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Convert a single OpenVAS intermediate finding into the Unified Finding Model.
-        """
+    def normalize(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "finding_id": str(uuid4()),
+            "source": self._build_source(finding),
+            "vulnerability": self._build_vulnerability(finding),
+            "severity": self._build_severity(finding),
+            "target": self._build_target(finding),
+            "evidence": self._build_evidence(finding),
+            "remediation": self._build_remediation(finding),
+            "metadata": self._build_metadata(finding),
+        }
+    
+    
+    def _build_source(self, finding):
+        return {
+            "scanner": None, #finding.get("source"),
+            "scanner_version": None, #finding.get("scanner_version"),
+            "scan_id": None, #finding.get("scan_id"),
+            "scan_timestamp": None, #finding.get("scan_timestamp"),
+        }
+    
+    
+    def _build_vulnerability(self, finding):
+        return {
+            "title": finding.get("title"),
+            "description": finding.get("description"),
+            "category": "network",
+            "cwe_ids": finding.get("cwe") or [],
+            "cve_ids": finding.get("cve") or [],
+            "references": finding.get("references") or [],
+        }
+    
+    
+    def _build_severity(self, finding):
+        return {
+            "level": self.SEVERITY_MAP.get(
+                finding.get("threat"),
+                "unknown" if finding.get("threat") else finding.get("severity"),
+            ),
+            "cvss_score": None,
+            "cvss_vector": None,
+            "confidence": None,
+        }
+    
+    def _build_target(self, finding):
+        return {
+            "host": finding.get("host"),
+            "port": finding.get("port"),
+            "protocol": finding.get("protocol"),
+            "url": None,
+            "asset_type": "network_service",
+        }
+    
+    def _build_evidence(self, finding):
+        return {
+            "request": None,
+            "response": None,
+            "matched_content": None, #finding.get("matched_content"),
+            "parameter": None,
+            "attack_vector": None,
+        }
+    
+
+    def _build_remediation(self, finding):
+        return {
+            "solution": finding.get("remediation"),
+            "solution_type": "vendorfix",
+        }
+    
+    def _build_metadata(self, finding):
+        tags = finding.get("tags")
+
+        if tags is None:
+            tags = []
 
         return {
-            "id": openvas_finding.get("raw_id"), #self._build_finding_id(openvas_finding),
-            "title": openvas_finding.get("title"),
-            "description": openvas_finding.get("description"),
-            "service": openvas_finding.get("service"),
-            "severity": self._build_severity(
-                openvas_finding.get("severity")
-            ),
-            "cwe": openvas_finding.get("cwe"),
-            "url": openvas_finding.get("url"),
-            "source": openvas_finding.get("source"),
-            "raw": openvas_finding.get("raw"),
-            "nvt": openvas_finding.get("nvt"),
-            "remediation": openvas_finding.get("remediation"),
+            "raw_plugin_id": finding.get("nvt"),
+            "tags": tags,
+            "first_seen": finding.get("scan_timestamp"),
+            "raw_source_data": finding.get("raw"),
         }
