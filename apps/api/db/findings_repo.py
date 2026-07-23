@@ -35,11 +35,14 @@ def _serialise_for_insert(finding: Finding) -> dict:
     )
 
 # Creates readable label for error message purposes to identify the finding (returns string)
-def _finding_identity(finding: Finding):
+def _finding_identity(finding: Finding) -> str:
+    metadata = finding.metadata or {}
+    plugin_id = metadata.get("raw_plugin_id") if isinstance(metadata, dict) else None
+
     return (
-        "scanner=" + str (finding.source_scanner) + "," +
-        "scan_id=" + str (finding.scan_id) + "," +
-        "source_finding_id=" + str (finding.source_finding_id)
+        f"scanner={finding.source_scanner},"
+        f"scan_id={finding.scan_id},"
+        f"plugin_id={plugin_id}"
     )
 
 # Writing functions
