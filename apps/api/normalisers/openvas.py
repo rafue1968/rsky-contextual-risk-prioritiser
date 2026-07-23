@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
 from uuid import uuid4
+from schemas.finding import Finding
 
 class OpenVASNormalizer:
     """
@@ -16,8 +17,8 @@ class OpenVASNormalizer:
     }
     
 
-    def normalize(self, finding: Dict[str, Any]) -> Dict[str, Any]:
-        return {
+    def normalize(self, finding: Dict[str, Any]) -> Finding:
+        data = {
             "finding_id": str(uuid4()),
             "source": self._build_source(finding),
             "vulnerability": self._build_vulnerability(finding),
@@ -27,14 +28,16 @@ class OpenVASNormalizer:
             "remediation": self._build_remediation(finding),
             "metadata": self._build_metadata(finding),
         }
+
+        return Finding(**data)
     
     
     def _build_source(self, finding):
         return {
-            "scanner": None, #finding.get("source"),
-            "scanner_version": None, #finding.get("scanner_version"),
-            "scan_id": None, #finding.get("scan_id"),
-            "scan_timestamp": None, #finding.get("scan_timestamp"),
+            "scanner": finding.get("source"),
+            "scanner_version": finding.get("scanner_version"),
+            "scan_id": finding.get("scan_id"),
+            "scan_timestamp": finding.get("scan_timestamp"),
         }
     
     
@@ -55,9 +58,9 @@ class OpenVASNormalizer:
                 finding.get("threat"),
                 "unknown" if finding.get("threat") else finding.get("severity"),
             ),
-            "cvss_score": None,
-            "cvss_vector": None,
-            "confidence": None,
+            "cvss_score": finding.get("cvss_score"),
+            "cvss_vector": finding.get("cvss_vector"),
+            # "confidence": None,
         }
     
     def _build_target(self, finding):
@@ -81,8 +84,10 @@ class OpenVASNormalizer:
 
     def _build_remediation(self, finding):
         return {
-            "solution": finding.get("remediation"),
-            "solution_type": "vendorfix",
+            "solution": finding.get("solution"), #finding.get("remediation"),
+            "solution_type": (
+                finding.get("solution_type") or "vendorfix"
+                ).lower(),
         }
     
     def _build_metadata(self, finding):

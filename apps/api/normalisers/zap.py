@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
 from uuid import uuid4
+from schemas.finding import Finding
 
 
 
@@ -18,12 +19,12 @@ class ZapNormalizer:
     }
 
 
-    def normalize(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+    def normalize(self, finding: Dict[str, Any]) -> Finding:
         """
         Convert a single OWASP ZAP intermediate finding into the Unified Finding Model.
         """
 
-        return {
+        data = {
             "finding_id": str(uuid4()),
             "source": self._build_source(finding),
             "vulnerability": self._build_vulnerability(finding),
@@ -33,6 +34,8 @@ class ZapNormalizer:
             "remediation": self._build_remediation(finding),
             "metadata": self._build_metadata(finding),
         }
+
+        return Finding(**data)
     
 
     def _build_source(self, finding):
@@ -57,7 +60,7 @@ class ZapNormalizer:
             "category": "web",
             "cwe_ids": finding.get("cwe") or [],
             "cve_ids": finding.get("cve") or [],
-            "references": [] #references,
+            "references": references,
         }
     
     

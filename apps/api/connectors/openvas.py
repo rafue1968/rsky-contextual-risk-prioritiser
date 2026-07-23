@@ -90,9 +90,9 @@ def parse_openvas_file(file_path: str) -> list[dict]:
 
                 "references": urls,
 
-                "nvt": text_or_none(result, "//oid"),
+                "nvt": text_or_none(result, ".//oid"),
 
-                "solution": text_or_none(result, "//solution"),
+                "solution": text_or_none(result, ".//solution"),
 
 
 
