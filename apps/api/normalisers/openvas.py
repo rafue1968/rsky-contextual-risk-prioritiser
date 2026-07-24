@@ -38,6 +38,7 @@ class OpenVASNormalizer:
             "scanner_version": finding.get("scanner_version"),
             "scan_id": finding.get("scan_id"),
             "scan_timestamp": finding.get("scan_timestamp"),
+            "source_finding_id": finding.get("raw_id"),
         }
     
     
