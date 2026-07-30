@@ -54,15 +54,15 @@ class OpenVASNormalizer:
     
     
     def _build_severity(self, finding):
+        severity = finding.get("threat") or finding.get("severity")
         return {
             "level": self.SEVERITY_MAP.get(
-                finding.get("threat"),
-                "unknown" if finding.get("threat") else finding.get("severity"),
+                severity,
+                "informational"
             ),
             "cvss_score": finding.get("cvss_score"),
             "cvss_vector": finding.get("cvss_vector"),
-            # "confidence": None,
-        }
+    }
     
     def _build_target(self, finding):
         return {

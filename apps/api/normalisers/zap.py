@@ -90,8 +90,8 @@ class ZapNormalizer:
                 protocol = "http"
 
         return {
-            "host": None, #finding.get("host"),
-            "port": None, #finding.get("port"),
+            "host": finding.get("host"),
+            "port": finding.get("port"),
             "protocol": protocol,
             "url": url,
             "asset_type": "web_app"

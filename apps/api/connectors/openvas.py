@@ -54,6 +54,14 @@ def parse_openvas_file(file_path: str) -> list[dict]:
             port_number = None
             protocol = None
 
+            score = text_or_none(result, "severity")
+
+            try:
+                score = float(score)
+            except:
+                score = None
+            
+
             if port and "/" in port:
                 port_number, protocol = port.split("/")
 
@@ -78,7 +86,7 @@ def parse_openvas_file(file_path: str) -> list[dict]:
 
                 "threat": text_or_none(result, "threat"),
 
-                "cvss_score": text_or_none(result, "severity"),
+                "cvss_score": score,
 
                 "cvss_vector": text_or_none(
                     result,

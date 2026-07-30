@@ -55,6 +55,8 @@ create table findings (
             'https'
         )
     )
+    constraint findings_source_unique 
+    unique(source_scanner, scan_id, source_finding_id)
 );
 
 -- Indexes for efficient querying
@@ -74,7 +76,9 @@ create index findings_cve_ids_gin_idx on findings using gin(cve_ids); -- GIN is 
 
 create index findings_cwe_ids_gin_idx on findings using gin(cwe_ids);
 
-create index findings_source_lookup_idx on findings(source_scanner, scan_id, source_finding_id);
+-- create index findings_source_lookup_idx on findings(source_scanner, scan_id, source_finding_id);
+-- alter table findings add constraint findings_source_unique unique(source_scanner, scan_id, source_finding_id);
+
 
 -- Function
 -- This function will be used to automatically update the "updated_at" column whenever a record is updated

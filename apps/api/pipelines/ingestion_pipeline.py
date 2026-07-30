@@ -6,6 +6,7 @@ from normalisers.zap import ZapNormalizer
 from normalisers.openvas import OpenVASNormalizer
 from db.findings_repo import upsert_findings_bulk
 from schemas.finding import Finding
+from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,8 @@ def run_ingestion_pipeline(scanner: str, file_path: str, supabase):
     End-to-end ingestion pipeline:
     Connector → Normaliser
     """
+
+    scan_id = str(uuid4())
 
     logger.info(f"Starting {scanner} ingestion pipeline")
 
@@ -35,10 +38,15 @@ def run_ingestion_pipeline(scanner: str, file_path: str, supabase):
 
     logger.info(f"Found {len(raw_findings)} findings")
 
-    findings = [
-        normalizer.normalize(f)
-        for f in raw_findings
-    ]
+    findings = []
+
+    for f in raw_findings:
+        f["scan_id"] = scan_id
+        findings.append(
+            normalizer.normalize(f)
+        )
+
+
     result = upsert_findings_bulk(supabase, findings)
 
     
