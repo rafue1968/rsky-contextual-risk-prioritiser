@@ -95,3 +95,12 @@ create trigger update_findings_updated_at
 before update on findings
 for each row
 execute function update_updated_at_column();
+
+alter table findings
+add column fingerprint text;
+
+alter table findings
+add column is_canonical boolean not null default true;
+
+alter table findings
+add column canonical_finding_id uuid references findings(finding_id);

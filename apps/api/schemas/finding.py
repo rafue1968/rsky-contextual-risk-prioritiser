@@ -45,6 +45,13 @@ class Finding(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+    fingerprint: Optional[str] = None
+
+    is_canonical: bool = True
+
+    canonical_finding_id: Optional[UUID] = None
+
+
     @model_validator(mode="before")
     @classmethod
     def _normalise_input(cls, data: Any) -> Any:
