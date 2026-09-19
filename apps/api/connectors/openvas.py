@@ -17,6 +17,18 @@ def text_or_none(node: ET.Element,path: str,) -> str | None:
 
     return None
 
+def attribute_or_none(
+    node: ET.Element,
+    path: str,
+    attribute: str,
+) -> str | None:
+    element = node.find(path)
+
+    if element is None:
+        return None
+
+    return element.attrib.get(attribute)
+
 
 def parse_port(value: str | None,) -> tuple[int | None, str | None]:
     if not value or "/" not in value:
@@ -88,10 +100,7 @@ def parse_openvas_file(file_path: str,) -> list[Finding]:
 
             finding = Finding(
                 source_scanner="openvas",
-                source_finding_id=text_or_none(
-                    result,
-                    "id",
-                ),
+                source_finding_id=attribute_or_none(result,".","id",),
 
                 title=(
                     text_or_none(result, "name")
@@ -137,9 +146,10 @@ def parse_openvas_file(file_path: str,) -> list[Finding]:
                 },
 
                 metadata={
-                    "nvt": text_or_none(
+                    "nvt": attribute_or_none(
                         result,
-                        ".//oid",
+                        "nvt",
+                        "oid",
                     ),
                 },
 

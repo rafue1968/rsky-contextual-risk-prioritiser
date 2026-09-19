@@ -81,3 +81,12 @@ Contextual risk prioritisation
       ↓
 Database/API
 ```
+
+### OpenVAS Sample
+
+<result id="...">
+    ├── <name>...</name>
+    ├── <host>...</host>
+    ├── <port>...</port>
+    ├── <severity>...</severity>
+    └── <nvt oid="...">
