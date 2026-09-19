@@ -1,5 +1,5 @@
-from apps.api.app.db.findings_repo import _serialise_for_insert
-from apps.api.app.schemas.finding import Finding
+from apps.api.db.findings_repo import _serialise_for_insert
+from apps.api.schemas.finding import Finding
 
 
 def test_finding_model_accepts_normaliser_payload():

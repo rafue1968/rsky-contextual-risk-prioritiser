@@ -2,7 +2,7 @@ import os
 
 from supabase import create_client
 
-from apps.api.app.pipelines.ingestion_pipeline import run_ingestion_pipeline
+from apps.api.pipelines.ingestion_pipeline import run_ingestion_pipeline
 
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]

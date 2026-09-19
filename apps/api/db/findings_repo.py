@@ -7,7 +7,7 @@ and updates the existing finding with the latest data.
 from typing import Optional
 from uuid import UUID
 from supabase import Client
-from apps.api.app.schemas.finding import Finding
+from apps.api.schemas.finding import Finding
 from postgrest.exceptions import APIError # DB error handling as API
 
 

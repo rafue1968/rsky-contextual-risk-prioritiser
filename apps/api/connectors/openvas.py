@@ -1,130 +1,158 @@
 import logging
 import xml.etree.ElementTree as ET
+
 from defusedxml.ElementTree import parse as safe_parse
+
+from schemas.finding import Finding
+
 
 logger = logging.getLogger(__name__)
 
 
-def text_or_none(node, path: str):
-    """
-    Helper function to safely extract XML text.
-    """
+def text_or_none(node: ET.Element,path: str,) -> str | None:
     child = node.find(path)
-    return child.text.strip() if child is not None and child.text else None
+
+    if child is not None and child.text:
+        return child.text.strip()
+
+    return None
 
 
-def parse_openvas_file(file_path: str) -> list[dict]:
-    """
-    Reads OpenVAS XML export and extracts findings into a flat structure.
-    """
+def parse_port(value: str | None,) -> tuple[int | None, str | None]:
+    if not value or "/" not in value:
+        return None, None
 
-    findings = []
+    port_text, protocol = value.split("/", 1)
 
-    # 1. Safely parse XML (prevents XML attacks / malformed input crashes)
+    try:
+        return int(port_text), protocol.lower()
+    except ValueError:
+        return None, protocol.lower()
+
+
+def parse_openvas_file(file_path: str,) -> list[Finding]:
+    findings: list[Finding] = []
+
     try:
         tree = safe_parse(file_path)
         root = tree.getroot()
+    except Exception as exc:
+        logger.error(
+            "Failed to parse OpenVAS XML: %s",
+            exc,
+        )
+        return findings
 
-    except Exception as e:
-        logger.error(f"Failed to parse OpenVAS XML: {e}")
-        return []
-
-    # 2. Find all vulnerability results
     results = root.findall(".//result")
 
-    for idx, result in enumerate(results):
+    for index, result in enumerate(results):
         try:
-            # 3. Extract fields (still raw, not normalized)
             refs = result.findall(".//ref")
 
-            cves = [
-                r.attrib.get("id")
-                for r in refs
-                if r.attrib.get("type") == "cve"
+            cve_ids = [
+                ref.attrib["id"]
+                for ref in refs
+                if ref.attrib.get("type") == "cve"
+                and ref.attrib.get("id")
             ]
 
-            urls = [
-                r.attrib.get("id")
-                for r in refs
-                if r.attrib.get("type") == "url"
+            references = [
+                ref.attrib["id"]
+                for ref in refs
+                if ref.attrib.get("type") == "url"
+                and ref.attrib.get("id")
             ]
 
-            port = text_or_none(result, "port")
+            port_number, protocol = parse_port(
+                text_or_none(result, "port")
+            )
 
-            port_number = None
-            protocol = None
-
-            score = text_or_none(result, "severity")
+            severity_text = text_or_none(
+                result,
+                "severity",
+            )
 
             try:
-                score = float(score)
-            except:
+                score = (
+                    float(severity_text)
+                    if severity_text is not None
+                    else None
+                )
+            except ValueError:
                 score = None
-            
 
-            if port and "/" in port:
-                port_number, protocol = port.split("/")
+            raw_xml = ET.tostring(
+                result,
+                encoding="unicode",
+            )
 
-            finding = {
-                "source": "openvas",
-
-                "raw_id": text_or_none(result, "id"),
-
-                "host": text_or_none(result, "host"),
-
-                "ip": text_or_none(result, "host"),
-
-                "port": int(port_number) if port_number else None,
-
-                "protocol": protocol,
-
-                "title": text_or_none(result, "name"),
-
-                "description": text_or_none(result, "description"),
-
-                "severity": text_or_none(result, "severity"),
-
-                "threat": text_or_none(result, "threat"),
-
-                "cvss_score": score,
-
-                "cvss_vector": text_or_none(
+            finding = Finding(
+                source_scanner="openvas",
+                source_finding_id=text_or_none(
                     result,
-                    ".//cvss_base_vector",
+                    "id",
                 ),
 
-                # CVEs are multiple values
-                "cve": cves,
-
-                "references": urls,
-
-                "nvt": text_or_none(result, ".//oid"),
-
-                "solution": text_or_none(result, ".//solution"),
-
-
-
-                "solution_type": text_or_none(
+                title=(
+                    text_or_none(result, "name")
+                    or "Untitled OpenVAS finding"
+                ),
+                description=text_or_none(
                     result,
-                    ".//solution/type",
+                    "description",
                 ),
 
-                "qod": text_or_none(result, ".//qod/value"),
+                severity_score=score,
 
-                "tags": None,
-
-                # Keep full XML string for debugging + traceability
-                "raw": ET.tostring(
-                    result, 
-                    encoding="unicode",
+                target_host=text_or_none(
+                    result,
+                    "host",
                 ),
-            }
+                target_port=port_number,
+                target_protocol=protocol,
+
+                cve_ids=cve_ids,
+
+                evidence={
+                    "threat": text_or_none(
+                        result,
+                        "threat",
+                    ),
+                    "qod": text_or_none(
+                        result,
+                        ".//qod/value",
+                    ),
+                    "references": references,
+                },
+
+                remediation={
+                    "solution": text_or_none(
+                        result,
+                        ".//solution",
+                    ),
+                    "solution_type": text_or_none(
+                        result,
+                        ".//solution/type",
+                    ),
+                },
+
+                metadata={
+                    "nvt": text_or_none(
+                        result,
+                        ".//oid",
+                    ),
+                },
+
+                raw_payload={
+                    "xml": raw_xml,
+                },
+            )
 
             findings.append(finding)
 
-        except Exception as e:
-            logger.warning(f"Skipping OpenVAS result index={idx}: {e}")
+        except Exception as exc:
+            logger.warning("Skipping OpenVAS result index=%d: %s", index, exc,)
 
-    logger.info(f"Ingested {len(findings)} OpenVAS findings")
+    logger.info("Ingested %d OpenVAS findings", len(findings),)
 
     return findings
