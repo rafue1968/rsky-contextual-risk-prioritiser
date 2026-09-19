@@ -1,11 +1,11 @@
-from connectors.zap import parse_zap_file
-from connectors.openvas import parse_openvas_file
-from normalisers.core import normalise_finding
+from apps.api.app.connectors.zap import parse_zap_file
+from apps.api.app.connectors.openvas import parse_openvas_file
+from apps.api.app.normalisers.core import normalise_finding
 import logging
-from normalisers.zap import ZapNormalizer
-from normalisers.openvas import OpenVASNormalizer
-from db.findings_repo import upsert_findings_bulk
-from schemas.finding import Finding
+from apps.api.app.normalisers.zap import ZapNormalizer
+from apps.api.app.normalisers.openvas import OpenVASNormalizer
+from apps.api.app.db.findings_repo import upsert_findings_bulk
+from apps.api.app.schemas.finding import Finding
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)

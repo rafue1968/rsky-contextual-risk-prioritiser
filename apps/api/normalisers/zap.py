@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 from uuid import uuid4
-from schemas.finding import Finding
+from apps.api.app.schemas.finding import Finding
 
 
 

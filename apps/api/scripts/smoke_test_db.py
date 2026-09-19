@@ -15,14 +15,14 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from supabase import create_client
 
-from config import settings
-from db.findings_repo import (
+from apps.api.app.config import settings
+from apps.api.app.db.findings_repo import (
     get_finding,
     insert_finding,
     list_findings,
     upsert_finding,
 )
-from schemas.finding import Finding
+from apps.api.app.schemas.finding import Finding
 
 
 # Test scan IDs — used to clean up before each run so the test is
