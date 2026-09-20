@@ -64,6 +64,8 @@ def parse_openvas_file(file_path: str) -> list[dict]:
 
             if port and "/" in port:
                 port_number, protocol = port.split("/")
+                if protocol not in ("tcp", "udp", "http", "https"):
+                    protocol = None
 
             finding = {
                 "source": "openvas",
@@ -78,7 +80,18 @@ def parse_openvas_file(file_path: str) -> list[dict]:
 
                 "protocol": protocol,
 
-                "title": text_or_none(result, "name"),
+                "title": (
+                    text_or_none(result, "name")
+                    or next(
+                        (
+                            text_or_none(d, "value")
+                            for d in result.findall(".//detail")
+                            if text_or_none(d, "name") == "source_name"
+                        ),
+                        None,
+                    )
+                    or "OpenVAS finding (untitled)"
+                ),
 
                 "description": text_or_none(result, "description"),
 
