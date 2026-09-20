@@ -74,7 +74,7 @@ def parse_openvas_file(file_path: str) -> list[dict]:
 
                 "ip": text_or_none(result, "host"),
 
-                "port": int(port_number) if port_number else None,
+                "port": int(port_number) if port_number and port_number.isdigit() else None,
 
                 "protocol": protocol,
 

@@ -101,5 +101,5 @@ class OpenVASNormalizer:
             "raw_plugin_id": finding.get("nvt"),
             "tags": tags,
             "first_seen": finding.get("scan_timestamp"),
-            "raw_source_data": finding.get("raw"),
+            "raw_source_data": {"raw_xml": finding.get("raw")},
         }
