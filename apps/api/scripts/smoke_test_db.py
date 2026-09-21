@@ -5,9 +5,10 @@ Covers: insert, get, list, and upsert semantics. Run with:
     python apps/api/scripts/smoke_test_db.py
 
 Run it twice in a row to prove the upsert is idempotent (the second
-run should still leave exactly one row per natural key).
+run should still leave exactly one row per natural key) — this still
+works even with cleanup-after-test enabled, because each section
+cleans up its OWN previous row before inserting again.
 """
-
 import sys
 from pathlib import Path
 
@@ -23,12 +24,29 @@ from db.findings_repo import (
     upsert_finding,
 )
 from schemas.finding import Finding
+from connectors.openvas import parse_openvas_file
+from normalisers.openvas import OpenVASNormalizer
 
 
 # Test scan IDs — used to clean up before each run so the test is
 # repeatable. Keep these distinct from any real scan_ids.
 INSERT_TEST_SCAN_ID = "smoke-test-insert-001"
 UPSERT_TEST_SCAN_ID = "smoke-test-upsert-001"
+OPENVAS_TEST_SCAN_ID = "smoke-test-openvas-insert-001"
+
+# Toggle: should EVERY test row (ZAP sections 1 & 2, and the OpenVAS
+# section 3) be deleted at the end of this run, so nothing is left
+# behind in the shared Supabase database?
+#
+#   True  -> normal mode: insert, verify, then delete, for all three
+#            sections. Nothing is left behind (default — leave as True).
+#   False -> screenshot mode: insert and verify, but SKIP deletion for
+#            all three, so the rows are still visible in Supabase's
+#            Table Editor for you to screenshot. Once you've taken the
+#            screenshot, set this back to True and re-run the script —
+#            that will clean everything up (each section deletes its
+#            own previous row before inserting a fresh one either way).
+CLEANUP_AFTER_TEST = False
 
 
 def _cleanup(supabase, scan_id: str) -> None:
@@ -97,6 +115,14 @@ def test_insert_and_read(supabase) -> None:
         "Our finding should appear in the list"
     print(f"  Found {len(findings)} matching finding(s) in DB")
 
+    # Clean up straight away, same as the other sections, so nothing
+    # from this run is left sitting in the shared DB.
+    if CLEANUP_AFTER_TEST:
+        _cleanup(supabase, INSERT_TEST_SCAN_ID)
+        print("  Cleaned up test row.")
+    else:
+        print(f"  Skipped cleanup on purpose (scan_id={INSERT_TEST_SCAN_ID}).")
+
     print("Section 1 passed.")
 
 
@@ -148,7 +174,48 @@ def test_upsert_is_idempotent(supabase) -> None:
     )
     print(f"  Confirmed exactly {len(rows)} row in DB for this scan.")
 
+    # Clean up straight away, same as the other sections.
+    if CLEANUP_AFTER_TEST:
+        _cleanup(supabase, UPSERT_TEST_SCAN_ID)
+        print("  Cleaned up test row.")
+    else:
+        print(f"  Skipped cleanup on purpose (scan_id={UPSERT_TEST_SCAN_ID}).")
+
     print("Section 2 passed.")
+
+
+def test_openvas_insert_and_read(supabase) -> None:
+    """Section 3: OpenVAS finding, built through the REAL parse+normalise
+    pipeline (not hand-built like the ZAP helper above) — this proves
+    the whole OpenVAS journey end to end, not just the DB layer."""
+    print("\n=== Section 3: OpenVAS insert + read (persist step) ===")
+    _cleanup(supabase, OPENVAS_TEST_SCAN_ID)
+
+    # Reuse the same sample file local_openvas_test.py already proved
+    # parses and normalises cleanly (151 OK, 0 failed).
+    raw = parse_openvas_file("../../sample-data/openvas/openvas.xml")
+    finding = OpenVASNormalizer().normalize(raw[0])
+    finding.scan_id = OPENVAS_TEST_SCAN_ID  # tag it unmistakably as test data
+
+    print("Inserting finding...")
+    new_id = insert_finding(supabase, finding)
+    print(f"  Inserted with id: {new_id}")
+
+    print("Reading it back...")
+    fetched = get_finding(supabase, new_id)
+    assert fetched is not None, "Finding should exist"
+    assert fetched.source_scanner == "openvas"
+    assert fetched.raw_payload == finding.raw_payload, "raw_payload round-trip failed"
+    print(f"  Title: {fetched.title}")
+    print(f"  Severity: {fetched.severity_level} ({fetched.severity_score})")
+
+    if CLEANUP_AFTER_TEST:
+        _cleanup(supabase, OPENVAS_TEST_SCAN_ID)
+        print("  Cleaned up test row.")
+    else:
+        print(f"  Skipped cleanup on purpose (scan_id={OPENVAS_TEST_SCAN_ID}).")
+
+    print("Section 3 passed.")
 
 
 def main() -> None:
@@ -156,8 +223,17 @@ def main() -> None:
 
     test_insert_and_read(supabase)
     test_upsert_is_idempotent(supabase)
+    test_openvas_insert_and_read(supabase)
 
-    print("\nAll sections passed. DB layer is hardened.")
+    if CLEANUP_AFTER_TEST:
+        print("\nAll sections passed. DB layer is hardened. No test rows left behind.")
+    else:
+        print(
+            "\nAll sections passed. DB layer is hardened.\n"
+            "NOTE: CLEANUP_AFTER_TEST is False — test rows are still in "
+            "Supabase. Take your screenshots, then set it back to True "
+            "and re-run this script to clean everything up."
+        )
 
 
 if __name__ == "__main__":
