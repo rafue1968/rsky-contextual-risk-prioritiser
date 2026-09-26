@@ -5,6 +5,7 @@ anyio==4.13.0
 certifi==2026.2.25
 click==8.3.2
 colorama==0.4.6
+defusedxml==0.7.1
 fastapi==0.136.0
 greenlet==3.4.0
 h11==0.16.0

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from uuid import uuid4
 from schemas.finding import Finding
 
@@ -38,7 +38,7 @@ class OpenVASNormalizer:
             "scanner_version": finding.get("scanner_version"),
             "scan_id": finding.get("scan_id"),
             "scan_timestamp": finding.get("scan_timestamp"),
-            "source_finding_id": finding.get("raw_id"),
+            "source_finding_id": finding.get("source_finding_id") or finding.get("raw_id"),
         }
     
     
@@ -48,13 +48,36 @@ class OpenVASNormalizer:
             "description": finding.get("description"),
             "category": "network",
             "cwe_ids": finding.get("cwe") or [],
-            "cve_ids": finding.get("cve") or [],
+            "cve_ids": [
+                str(value).strip()
+                for value in (finding.get("cve") or [])
+                if str(value).strip().upper() not in {"NOCVE", "NONE"}
+            ],
             "references": finding.get("references") or [],
         }
     
     
     def _build_severity(self, finding):
-        severity = finding.get("threat") or finding.get("severity")
+        severity = finding.get("threat")
+        if severity is not None:
+            severity = str(severity).strip().lower().title()
+        if severity not in self.SEVERITY_MAP:
+            score = finding.get("cvss_score")
+            try:
+                score = float(score)
+            except (TypeError, ValueError):
+                score = None
+            if score is not None:
+                severity = (
+                    "Critical" if score >= 9.0 else
+                    "High" if score >= 7.0 else
+                    "Medium" if score >= 4.0 else
+                    "Low" if score > 0 else
+                    "Log"
+                )
+            else:
+                severity = finding.get("severity")
+                severity = str(severity).strip().lower().title() if severity is not None else None
         return {
             "level": self.SEVERITY_MAP.get(
                 severity,
@@ -68,7 +91,7 @@ class OpenVASNormalizer:
         return {
             "host": finding.get("host"),
             "port": finding.get("port"),
-            "protocol": finding.get("protocol"),
+            "protocol": (finding.get("protocol") or "").lower() or None,
             "url": None,
             "asset_type": "network_service",
         }
@@ -84,11 +107,10 @@ class OpenVASNormalizer:
     
 
     def _build_remediation(self, finding):
+        solution_type = finding.get("solution_type")
         return {
             "solution": finding.get("solution"), #finding.get("remediation"),
-            "solution_type": (
-                finding.get("solution_type") or "vendorfix"
-                ).lower(),
+            "solution_type": str(solution_type).strip().lower() if solution_type else None,
         }
     
     def _build_metadata(self, finding):
@@ -102,4 +124,7 @@ class OpenVASNormalizer:
             "tags": tags,
             "first_seen": finding.get("scan_timestamp"),
             "raw_source_data": finding.get("raw"),
+            "connector_output": {
+                key: value for key, value in finding.items() if key != "raw"
+            },
         }
