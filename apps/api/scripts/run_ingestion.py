@@ -1,17 +1,12 @@
-import os
-
 from supabase import create_client
 
+from config import settings
 from pipelines.ingestion_pipeline import run_ingestion_pipeline
 
 
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
-
-
 supabase = create_client(
-    SUPABASE_URL,
-    SUPABASE_KEY
+    settings.SUPABASE_URL,
+    settings.SUPABASE_SERVICE_KEY,
 )
 
 

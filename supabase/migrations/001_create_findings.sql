@@ -54,7 +54,7 @@ create table findings (
             'http',
             'https'
         )
-    )
+    ),
     constraint findings_source_unique 
     unique(source_scanner, scan_id, source_finding_id)
 );
@@ -104,3 +104,8 @@ add column is_canonical boolean not null default true;
 
 alter table findings
 add column canonical_finding_id uuid references findings(finding_id);
+
+-- Fingerprint matching is performed on every ingestion batch.
+create index findings_fingerprint_idx
+on findings(fingerprint)
+where fingerprint is not null;
