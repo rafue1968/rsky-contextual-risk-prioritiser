@@ -46,7 +46,7 @@ OPENVAS_TEST_SCAN_ID = "smoke-test-openvas-insert-001"
 #            screenshot, set this back to True and re-run the script —
 #            that will clean everything up (each section deletes its
 #            own previous row before inserting a fresh one either way).
-CLEANUP_AFTER_TEST = False
+CLEANUP_AFTER_TEST = True
 
 
 def _cleanup(supabase, scan_id: str) -> None:
