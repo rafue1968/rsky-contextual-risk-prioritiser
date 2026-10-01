@@ -1,5 +1,6 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from uuid import uuid4
+from urllib.parse import urlsplit
 from schemas.finding import Finding
 
 
@@ -44,7 +45,7 @@ class ZapNormalizer:
             "scanner_version": finding.get("scanner_version"),
             "scan_id": finding.get("scan_id"),
             "scan_timestamp": finding.get("scan_timestamp"),
-            "source_finding_id": finding.get("raw_id"),
+            "source_finding_id": finding.get("source_finding_id") or finding.get("raw_id"),
         }
     
 
@@ -59,8 +60,8 @@ class ZapNormalizer:
             "title": finding.get("title"),
             "description": finding.get("description"),
             "category": "web",
-            "cwe_ids": finding.get("cwe") or [],
-            "cve_ids": finding.get("cve") or [],
+            "cwe_ids": self._as_id_list(finding.get("cwe")),
+            "cve_ids": self._as_id_list(finding.get("cve")),
             "references": references,
         }
     
@@ -80,14 +81,9 @@ class ZapNormalizer:
     def _build_target(self, finding):
 
         url = finding.get("url")
-
-        protocol = None 
-        
-        if url:
-            if url.startswith("https://"):
-                protocol = "https"               
-            elif url.startswith("http://"):
-                protocol = "http"
+        protocol = urlsplit(url).scheme.lower() if url else None
+        if protocol not in {"http", "https"}:
+            protocol = "https" if str(finding.get("ssl", "")).lower() == "true" else "http"
 
         return {
             "host": finding.get("host"),
@@ -96,6 +92,14 @@ class ZapNormalizer:
             "url": url,
             "asset_type": "web_app"
         }
+
+    @staticmethod
+    def _as_id_list(value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return [str(item).strip() for item in value if str(item).strip()]
     
 
     def _build_evidence(self, finding):
@@ -125,4 +129,7 @@ class ZapNormalizer:
             "tags": tags,
             "first_seen": finding.get("scan_timestamp"),
             "raw_source_data": finding.get("raw"),
+            "connector_output": {
+                key: value for key, value in finding.items() if key != "raw"
+            },
         }

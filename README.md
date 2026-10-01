@@ -1,6 +1,6 @@
 # Rsky
 
-A Proof of Concept (POC) for a vulnerability prioritization platform designed to help security teams assess and rank vulnerabilities based on risk factors such as severity, exploitability, and business impact. This project aims to streamline the process of deciding which vulnerabilities to address first in a software system.
+A Proof of Concept (POC) for a vulnerability prioritization platform designed to help security teams assess and rank vulnerabilities based on risk factors such as severity, exploitability, and business impact. This project aims to streamline the process of deciding which vulnerabilities to address first in a software system.,
 
 ## Features
 
@@ -28,17 +28,20 @@ A Proof of Concept (POC) for a vulnerability prioritization platform designed to
 ### Backend Setup (FastAPI)
 
 1. Navigate to the API directory:
+
    ```
    cd apps/api
    ```
 
 2. Create a virtual environment:
+
    ```
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install dependencies:
+
    ```
    pip install -r requirements.txt
    ```
@@ -53,11 +56,13 @@ The API will be available at `http://localhost:8000` with automatic documentatio
 ### Frontend Setup (Next.js)
 
 1. Navigate to the web directory:
+
    ```
    cd apps/web
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
@@ -106,4 +111,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 For questions or feedback, please open an issue in the repository.
-
