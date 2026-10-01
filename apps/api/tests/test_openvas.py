@@ -15,13 +15,17 @@ ALLOWED_PROTOCOLS = {"tcp", "udp", "http", "https"}
 
 
 def test_parses_all_results_in_the_sample_file():
-    """Regression test for the int("general") crash: OpenVAS uses the
-    literal value "general" (not a number) as the port for host-level
-    findings, e.g. "general/tcp". Before the fix, 8 of these were
-    silently dropped during parsing instead of being included. All 151
-    <result> elements in the sample file should now come through."""
+    """OpenVAS embeds duplicate stub copies of a finding inside other
+    findings' <detection> sections — e.g. a single phpMyAdmin detection
+    can appear nested inside 11 unrelated results that also picked it up,
+    in addition to its own real top-level entry. The connector now reads
+    only the canonical top-level results (root.findall(".//results/result"))
+    so each real finding is counted once, matching the unique constraint
+    on the findings table (source_scanner + scan_id + source_finding_id) —
+    the duplicate stubs share an id with their canonical finding and would
+    never persist as separate rows anyway. 133 is the correct count."""
     findings = parse_openvas_file(SAMPLE_FILE)
-    assert len(findings) == 151
+    assert len(findings) == 133
 
 
 def test_every_parsed_finding_normalises_without_error():
